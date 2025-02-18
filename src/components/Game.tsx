@@ -9,31 +9,43 @@ interface GameProps {
 
 const Game: React.FC<GameProps> = ({ difficulty, onGameOver }) => {
   const [verses, setVerses] = useState<Verse[]>([]);
-  const [currentVerseIndex, setCurrentVerseIndex] = useState(0);
+  const [currentVerse, setCurrentVerse] = useState<Verse | null>(null);
+  const [usedVerses, setUsedVerses] = useState<Set<string>>(new Set());
   const [mistakes, setMistakes] = useState(0);
   const [score, setScore] = useState(0);
   const [showSource, setShowSource] = useState(false);
   const [feedbackVisible, setFeedbackVisible] = useState(false);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
-  const [currentAnswers, setCurrentAnswers] = useState<string[]>([]);
-  
+
   useEffect(() => {
     const loadedVerses = getVersesByDifficulty(difficulty);
     setVerses(loadedVerses);
+    selectRandomVerse(loadedVerses, new Set());
   }, [difficulty]);
 
-  const currentVerse = verses[currentVerseIndex];
-
-  const handleAnswerUpdate = (answers: string[]) => {
-    setCurrentAnswers(answers);
+  const selectRandomVerse = (availableVerses: Verse[], used: Set<string>) => {
+    // מסנן את הפסוקים שכבר השתמשנו בהם
+    const unusedVerses = availableVerses.filter(verse => !used.has(verse.id));
     
-    // בדוק אם כל המילים הוקלדו
-    if (!answers.includes('')) {
-      checkAnswer(answers);
+    // אם השתמשנו בכל הפסוקים, מתחיל מחדש
+    if (unusedVerses.length === 0) {
+      setUsedVerses(new Set());
+      selectRandomVerse(availableVerses, new Set());
+      return;
     }
+
+    // בוחר פסוק אקראי מהרשימה הנותרת
+    const randomIndex = Math.floor(Math.random() * unusedVerses.length);
+    const selectedVerse = unusedVerses[randomIndex];
+    setCurrentVerse(selectedVerse);
+    
+    // מוסיף את הפסוק לרשימת הפסוקים שהשתמשנו בהם
+    setUsedVerses(prev => new Set([...prev, selectedVerse.id]));
   };
 
-  const checkAnswer = (answers: string[]) => {
+  const handleAnswerUpdate = (answers: string[]) => {
+    if (!currentVerse || answers.includes('')) return;
+    
     const correctAnswer = currentVerse.missingWords.join(' ');
     const userAnswer = answers.join(' ');
     
@@ -44,15 +56,11 @@ const Game: React.FC<GameProps> = ({ difficulty, onGameOver }) => {
       
       setTimeout(() => {
         setScore(score + 1);
-        if (currentVerseIndex < verses.length - 1) {
-          setCurrentVerseIndex(prev => prev + 1);
-          setShowSource(false);
-          setFeedbackVisible(false);
-          setIsCorrect(null);
-          setCurrentAnswers([]);
-        } else {
-          onGameOver(score + 1);
-        }
+        setShowSource(false);
+        setFeedbackVisible(false);
+        setIsCorrect(null);
+        // בוחר פסוק חדש אקראי
+        selectRandomVerse(verses, usedVerses);
       }, 2000);
     } else {
       setIsCorrect(false);
@@ -75,10 +83,10 @@ const Game: React.FC<GameProps> = ({ difficulty, onGameOver }) => {
   if (!currentVerse) return null;
 
   return (
-    <div className="max-w-3xl mx-auto p-8">
-      <div className="bg-white rounded-2xl shadow-xl p-6">
+    <div className="max-w-3xl mx-auto p-4">
+      <div className="bg-white rounded-2xl shadow-xl p-4">
         {/* כותרת וניקוד */}
-        <div className="mb-8 flex items-center justify-between bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-xl">
+        <div className="mb-4 flex items-center justify-between bg-gradient-to-r from-blue-50 to-blue-100 p-3 rounded-xl">
           <div className="text-lg font-semibold">
             ניקוד: 
             <span className="mx-2 px-3 py-1 bg-blue-500 text-white rounded-lg">
@@ -100,32 +108,36 @@ const Game: React.FC<GameProps> = ({ difficulty, onGameOver }) => {
           </div>
         </div>
 
-        {/* תצוגת הפסוק */}
-        <div className="mb-8">
-          <VerseDisplay 
-            partialVerse={currentVerse.partialVerse}
-            missingWords={currentVerse.missingWords.map(word => ({ length: word.length }))}
-            onAnswerUpdate={handleAnswerUpdate}
-            verseIndex={currentVerseIndex}
-          />
-        </div>
-
         {/* משוב */}
         {feedbackVisible && (
           <div 
-            className={`p-4 rounded-xl text-center text-lg font-semibold mb-4 transition-all ${
-              isCorrect 
+            className={`p-3 my-4 rounded-xl text-center text-lg font-semibold 
+              transform transition-all duration-300 scale-100 
+              ${isCorrect 
                 ? 'bg-green-100 text-green-700 border-2 border-green-200' 
                 : 'bg-red-100 text-red-700 border-2 border-red-200'
-            }`}
+              }
+              fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-md
+              shadow-lg animate-bounce
+            `}
           >
             {isCorrect ? 'כל הכבוד! התשובה נכונה' : 'לא מדויק, נסה שוב'}
           </div>
         )}
 
+        {/* תצוגת הפסוק */}
+        <div className="mb-4">
+          <VerseDisplay 
+            partialVerse={currentVerse.partialVerse}
+            missingWords={currentVerse.missingWords.map(word => ({ length: word.length }))}
+            onAnswerUpdate={handleAnswerUpdate}
+            verseIndex={usedVerses.size}
+          />
+        </div>
+
         {/* מקור */}
         {showSource && (
-          <div className="mt-4 p-4 bg-blue-50 rounded-xl text-right animate-fade-in border-2 border-blue-100">
+          <div className="p-3 bg-blue-50 rounded-xl text-right animate-fade-in border-2 border-blue-100 mb-4">
             <span className="text-gray-600">מקור: </span>
             <span className="font-semibold text-blue-800">{currentVerse.source}</span>
           </div>
@@ -134,5 +146,18 @@ const Game: React.FC<GameProps> = ({ difficulty, onGameOver }) => {
     </div>
   );
 };
+
+// הוספת אנימציית קפיצה למשוב
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0) translateX(-50%); }
+    50% { transform: translateY(-10px) translateX(-50%); }
+  }
+  .animate-bounce {
+    animation: bounce 1s infinite;
+  }
+`;
+document.head.appendChild(style);
 
 export default Game;
