@@ -1,13 +1,13 @@
 {
   "files": {
     "main.css": "/MIKRA/static/css/main.bb1cbc96.css",
-    "main.js": "/MIKRA/static/js/main.3fcc2887.js",
+    "main.js": "/MIKRA/static/js/main.52fbf615.js",
     "index.html": "/MIKRA/index.html",
     "main.bb1cbc96.css.map": "/MIKRA/static/css/main.bb1cbc96.css.map",
-    "main.3fcc2887.js.map": "/MIKRA/static/js/main.3fcc2887.js.map"
+    "main.52fbf615.js.map": "/MIKRA/static/js/main.52fbf615.js.map"
   },
   "entrypoints": [
     "static/css/main.bb1cbc96.css",
-    "static/js/main.3fcc2887.js"
+    "static/js/main.52fbf615.js"
   ]
 }
