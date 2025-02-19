@@ -7,6 +7,7 @@ interface WordBoxProps {
   onFocus: () => void;
   verseIndex: number;
   onBackspace?: () => void;
+  onMoveToNextWord?: () => void;
 }
 
 const WordBox: React.FC<WordBoxProps> = ({ 
@@ -15,7 +16,8 @@ const WordBox: React.FC<WordBoxProps> = ({
   isActive, 
   onFocus, 
   verseIndex,
-  onBackspace 
+  onBackspace,
+  onMoveToNextWord
 }) => {
   const [letters, setLetters] = useState<string[]>(Array(length).fill(''));
   const inputRefs = useRef<(HTMLInputElement | null)[]>(Array(length).fill(null));
@@ -38,12 +40,11 @@ const WordBox: React.FC<WordBoxProps> = ({
     newLetters[index] = value;
     setLetters(newLetters);
 
-    if (value !== '') {
-      if (index < length - 1) {
-        inputRefs.current[index + 1]?.focus();
-      } else {
-        onWordComplete(newLetters.join(''));
-      }
+    if (value !== '' && index === length - 1) {
+      onWordComplete(newLetters.join(''));
+      onMoveToNextWord?.();
+    } else if (value !== '') {
+      inputRefs.current[index + 1]?.focus();
     }
   };
 
@@ -54,13 +55,12 @@ const WordBox: React.FC<WordBoxProps> = ({
     }
 
     if (e.key === 'Backspace') {
-      if (letters[index] === '') {
+      if (letters[index] === '' && index === 0) {
         e.preventDefault();
-        if (index > 0) {
-          inputRefs.current[index - 1]?.focus();
-        } else if (index === 0 && onBackspace) {
-          onBackspace();
-        }
+        onBackspace?.();
+      } else if (letters[index] === '' && index > 0) {
+        e.preventDefault();
+        inputRefs.current[index - 1]?.focus();
       } else {
         const newLetters = [...letters];
         newLetters[index] = '';
@@ -132,7 +132,21 @@ const VerseDisplay: React.FC<VerseDisplayProps> = ({
 
   const handleBackspace = (index: number) => {
     if (index > 0) {
+      const prevWordLength = missingWords[index - 1].length;
       setActiveWordIndex(index - 1);
+      // מיקוד על האות האחרונה של המילה הקודמת
+      setTimeout(() => {
+        const prevWord = document.querySelector(`[data-word-index="${index - 1}"]`);
+        const inputs = prevWord?.querySelectorAll('input');
+        const lastInput = inputs?.[prevWordLength - 1] as HTMLInputElement;
+        lastInput?.focus();
+      }, 0);
+    }
+  };
+
+  const handleMoveToNextWord = () => {
+    if (activeWordIndex < missingWords.length - 1) {
+      setActiveWordIndex(activeWordIndex + 1);
     }
   };
 
@@ -142,15 +156,17 @@ const VerseDisplay: React.FC<VerseDisplayProps> = ({
         <div className="w-full text-gray-800 font-medium">{partialVerse}</div>
         <div className="flex flex-wrap gap-3 justify-end">
           {missingWords.map((word, index) => (
-            <WordBox 
-              key={index}
-              length={word.length}
-              onWordComplete={(word) => handleWordComplete(index, word)}
-              isActive={index === activeWordIndex}
-              onFocus={() => setActiveWordIndex(index)}
-              verseIndex={verseIndex}
-              onBackspace={() => handleBackspace(index)}
-            />
+            <div key={index} data-word-index={index}>
+              <WordBox 
+                length={word.length}
+                onWordComplete={(word) => handleWordComplete(index, word)}
+                isActive={index === activeWordIndex}
+                onFocus={() => setActiveWordIndex(index)}
+                verseIndex={verseIndex}
+                onBackspace={() => handleBackspace(index)}
+                onMoveToNextWord={handleMoveToNextWord}
+              />
+            </div>
           ))}
         </div>
       </div>
@@ -158,7 +174,6 @@ const VerseDisplay: React.FC<VerseDisplayProps> = ({
   );
 };
 
-// הוספת אנימציה לגבול
 const style = document.createElement('style');
 style.textContent = `
   @keyframes pulse-border {
