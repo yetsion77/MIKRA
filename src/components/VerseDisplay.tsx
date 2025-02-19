@@ -7,7 +7,6 @@ interface WordBoxProps {
   onFocus: () => void;
   verseIndex: number;
   onBackspace?: () => void;
-  onMoveToNextWord: () => void;
 }
 
 const WordBox: React.FC<WordBoxProps> = ({ 
@@ -16,8 +15,7 @@ const WordBox: React.FC<WordBoxProps> = ({
   isActive, 
   onFocus, 
   verseIndex,
-  onBackspace,
-  onMoveToNextWord
+  onBackspace 
 }) => {
   const [letters, setLetters] = useState<string[]>(Array(length).fill(''));
   const inputRefs = useRef<(HTMLInputElement | null)[]>(Array(length).fill(null));
@@ -28,7 +26,6 @@ const WordBox: React.FC<WordBoxProps> = ({
 
   useEffect(() => {
     if (isActive) {
-      // תמיד מתמקד באות הראשונה כשהמילה הופכת לפעילה
       inputRefs.current[0]?.focus();
     }
   }, [isActive]);
@@ -46,7 +43,6 @@ const WordBox: React.FC<WordBoxProps> = ({
         inputRefs.current[index + 1]?.focus();
       } else {
         onWordComplete(newLetters.join(''));
-        onMoveToNextWord();
       }
     }
   };
@@ -63,7 +59,6 @@ const WordBox: React.FC<WordBoxProps> = ({
         if (index > 0) {
           inputRefs.current[index - 1]?.focus();
         } else if (index === 0 && onBackspace) {
-          // עובר למילה הקודמת רק אם אנחנו באות הראשונה
           onBackspace();
         }
       } else {
@@ -77,7 +72,7 @@ const WordBox: React.FC<WordBoxProps> = ({
   return (
     <div 
       className={`flex gap-[2px] p-2 rounded-lg mx-1 transition-all ${
-        isActive ? 'bg-blue-100 ring-2 ring-blue-200' : 'bg-gray-50'
+        isActive ? 'bg-blue-50 ring-1 ring-blue-200' : 'bg-gray-100'
       }`}
       onClick={onFocus}
     >
@@ -91,11 +86,11 @@ const WordBox: React.FC<WordBoxProps> = ({
           onKeyDown={(e) => handleKeyDown(i, e)}
           disabled={!isActive}
           maxLength={1}
-          className={`w-8 h-10 border-2 text-center text-lg font-semibold rounded-lg 
-            focus:outline-none focus:ring-2 cursor-text transition-colors
+          className={`w-8 h-10 border text-center text-lg rounded-lg 
+            focus:outline-none focus:ring-1 cursor-text transition-colors
             ${isActive 
-              ? 'border-blue-300 bg-white focus:border-blue-400 focus:ring-blue-200' 
-              : 'border-gray-200 bg-gray-50'
+              ? 'border-blue-200 bg-white focus:border-blue-300 focus:ring-blue-100 font-medium' 
+              : 'border-gray-300 bg-white font-normal'
             }
             ${isActive && letters[i] === '' ? 'animate-pulse-border' : ''}
           `}
@@ -138,13 +133,6 @@ const VerseDisplay: React.FC<VerseDisplayProps> = ({
   const handleBackspace = (index: number) => {
     if (index > 0) {
       setActiveWordIndex(index - 1);
-      // הפוקוס על האות האחרונה יקרה דרך ה-useEffect בקומפוננטת WordBox
-    }
-  };
-
-  const handleMoveToNextWord = () => {
-    if (activeWordIndex < missingWords.length - 1) {
-      setActiveWordIndex(prev => prev + 1);
     }
   };
 
@@ -162,7 +150,6 @@ const VerseDisplay: React.FC<VerseDisplayProps> = ({
               onFocus={() => setActiveWordIndex(index)}
               verseIndex={verseIndex}
               onBackspace={() => handleBackspace(index)}
-              onMoveToNextWord={handleMoveToNextWord}
             />
           ))}
         </div>
@@ -171,7 +158,7 @@ const VerseDisplay: React.FC<VerseDisplayProps> = ({
   );
 };
 
-// הוספת אנימציה מהבהבת לגבול
+// הוספת אנימציה לגבול
 const style = document.createElement('style');
 style.textContent = `
   @keyframes pulse-border {

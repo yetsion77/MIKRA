@@ -24,22 +24,17 @@ const Game: React.FC<GameProps> = ({ difficulty, onGameOver }) => {
   }, [difficulty]);
 
   const selectRandomVerse = (availableVerses: Verse[], used: Set<string>) => {
-    // מסנן את הפסוקים שכבר השתמשנו בהם
     const unusedVerses = availableVerses.filter(verse => !used.has(verse.id));
     
-    // אם השתמשנו בכל הפסוקים, מתחיל מחדש
     if (unusedVerses.length === 0) {
       setUsedVerses(new Set());
       selectRandomVerse(availableVerses, new Set());
       return;
     }
 
-    // בוחר פסוק אקראי מהרשימה הנותרת
     const randomIndex = Math.floor(Math.random() * unusedVerses.length);
     const selectedVerse = unusedVerses[randomIndex];
     setCurrentVerse(selectedVerse);
-    
-    // מוסיף את הפסוק לרשימת הפסוקים שהשתמשנו בהם
     setUsedVerses(prev => new Set([...prev, selectedVerse.id]));
   };
 
@@ -59,7 +54,6 @@ const Game: React.FC<GameProps> = ({ difficulty, onGameOver }) => {
         setShowSource(false);
         setFeedbackVisible(false);
         setIsCorrect(null);
-        // בוחר פסוק חדש אקראי
         selectRandomVerse(verses, usedVerses);
       }, 2000);
     } else {
@@ -108,23 +102,6 @@ const Game: React.FC<GameProps> = ({ difficulty, onGameOver }) => {
           </div>
         </div>
 
-        {/* משוב */}
-        {feedbackVisible && (
-          <div 
-            className={`p-3 my-4 rounded-xl text-center text-lg font-semibold 
-              transform transition-all duration-300 scale-100 
-              ${isCorrect 
-                ? 'bg-green-100 text-green-700 border-2 border-green-200' 
-                : 'bg-red-100 text-red-700 border-2 border-red-200'
-              }
-              fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-md
-              shadow-lg animate-bounce
-            `}
-          >
-            {isCorrect ? 'כל הכבוד! התשובה נכונה' : 'לא מדויק, נסה שוב'}
-          </div>
-        )}
-
         {/* תצוגת הפסוק */}
         <div className="mb-4">
           <VerseDisplay 
@@ -135,29 +112,31 @@ const Game: React.FC<GameProps> = ({ difficulty, onGameOver }) => {
           />
         </div>
 
-        {/* מקור */}
-        {showSource && (
-          <div className="p-3 bg-blue-50 rounded-xl text-right animate-fade-in border-2 border-blue-100 mb-4">
-            <span className="text-gray-600">מקור: </span>
-            <span className="font-semibold text-blue-800">{currentVerse.source}</span>
-          </div>
-        )}
+        {/* משוב ומקור */}
+        <div className="mt-4 space-y-2">
+          {feedbackVisible && (
+            <div 
+              className={`p-3 rounded-xl text-center text-lg font-medium transition-all duration-300
+                ${isCorrect 
+                  ? 'bg-green-50 text-green-700 border border-green-200' 
+                  : 'bg-red-50 text-red-700 border border-red-200'
+                }
+              `}
+            >
+              {isCorrect ? 'כל הכבוד! התשובה נכונה' : 'לא מדויק, נסה שוב'}
+            </div>
+          )}
+
+          {showSource && (
+            <div className="p-3 bg-blue-50 rounded-xl text-right border border-blue-100">
+              <span className="text-gray-600">מקור: </span>
+              <span className="font-semibold text-blue-800">{currentVerse.source}</span>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
 };
-
-// הוספת אנימציית קפיצה למשוב
-const style = document.createElement('style');
-style.textContent = `
-  @keyframes bounce {
-    0%, 100% { transform: translateY(0) translateX(-50%); }
-    50% { transform: translateY(-10px) translateX(-50%); }
-  }
-  .animate-bounce {
-    animation: bounce 1s infinite;
-  }
-`;
-document.head.appendChild(style);
 
 export default Game;
