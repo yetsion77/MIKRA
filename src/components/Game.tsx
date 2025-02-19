@@ -5,9 +5,10 @@ import { Verse, getVersesByDifficulty } from '../data/versesData.ts';
 interface GameProps {
   difficulty: 'easy' | 'hard';
   onGameOver: (score: number) => void;
+  onLevelComplete: (score: number) => void;
 }
 
-const Game: React.FC<GameProps> = ({ difficulty, onGameOver }) => {
+const Game: React.FC<GameProps> = ({ difficulty, onGameOver, onLevelComplete }) => {
   const [verses, setVerses] = useState<Verse[]>([]);
   const [currentVerse, setCurrentVerse] = useState<Verse | null>(null);
   const [usedVerses, setUsedVerses] = useState<Set<string>>(new Set());
@@ -50,11 +51,18 @@ const Game: React.FC<GameProps> = ({ difficulty, onGameOver }) => {
       setShowSource(true);
       
       setTimeout(() => {
-        setScore(score + 1);
-        setShowSource(false);
-        setFeedbackVisible(false);
-        setIsCorrect(null);
-        selectRandomVerse(verses, usedVerses);
+        const newScore = score + 1;
+        setScore(newScore);
+        
+        // בודק אם הגענו ל-20 נקודות
+        if (newScore === 20 && difficulty === 'easy') {
+          onLevelComplete(newScore);
+        } else {
+          setShowSource(false);
+          setFeedbackVisible(false);
+          setIsCorrect(null);
+          selectRandomVerse(verses, usedVerses);
+        }
       }, 2000);
     } else {
       setIsCorrect(false);
